@@ -1,13 +1,113 @@
-<!DOCTYPE html>
 {% load static %}
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <title>Document</title>
+    <title>Парта - Главная</title>
+    <link rel="stylesheet" href="{% static 'css/style.css'%}">
 </head>
 <body>
-    
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">
+                <img src="{% static 'img/logo.svg' %}" alt="Logo">
+            </div>
+            
+            <div class="burger" id="burger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <nav class="nav" id="nav">
+                <a href="#">Каталог</a>
+                <a href="#">Оборудования</a>
+                <a href="#">Ремонт</a>
+                <a href="#">Ведомость</a>
+                <a href="#">Вход</a>
+                <a href="#">Регистрация</a>
+                <a href="#" class="profile-link" id="nav1"><img src="{% static 'img/profile-img.png' %}" alt="Logo" class="dot">Профиль</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-bg">
+        <div class="container">
+            <section class="slider-section">
+                <div class="slider-window">
+                    <div class="slider-track" id="sliderTrack">
+                        <img src="{% static 'img/class1.png' %}" alt="Класс">
+                        <img src="{% static 'img/class2.png' %}" alt="Класс 2">
+                        <img src="{% static 'img/class1.png' %}" alt="Класс 3">
+                    </div>
+                </div>
+                <div class="contoler">
+                    <button class="slider-btn prev" id="prevBtn"></button>
+                    <button class="slider-btn next" id="nextBtn"></button>
+                </div>
+                
+            </section>
+
+            <div class="products-btn-wrapper">
+                <button class="btn-all-products">Все продукты</button>
+            </div>
+
+            <section class="partners">
+                <h2>Нам доверяют</h2>
+                <div class="partners-grid">
+                    <div class="partner-item">
+                        <img src="{% static 'img/dov.png' %}" alt="Партнер 1">
+                    </div>
+                    <div class="partner-item">
+                        <img src="{% static 'img/dov1.png' %}" alt="Партнер 2">
+                    </div>
+                    <div class="partner-item">
+                        <img src="{% static 'img/dov2.png' %}" alt="Партнер 3">
+                    </div>
+                    <div class="partner-item">
+                        <img src="{% static 'img/dov3.png' %}" alt="Партнер 4">
+                    </div>
+                </div>
+            </section>
+
+            <section class="history">
+                <h2>История</h2>
+                <p>Мы занимаемся упрощением инвентаризации для колледжей и школ.</p>
+            </section>
+
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="logo white-logo">
+                    <img src="{% static 'img/logo_footer.svg' %}" alt="Logo">
+                </div>
+                <p>Пн - пт с 07:00 до 19:00</p>
+            </div>
+            <div class="footer-col">
+                <h4>Для клиентов</h4>
+                <a href="#">Каталог</a>
+                <a href="#">Главная</a>
+                <a href="#">Профиль</a>
+            </div>
+            <div class="footer-col">
+                <h4>Для сотрудников</h4>
+                <a href="#">Оборудование</a>
+                <a href="#">Ремонты</a>
+                <a href="#">Ведомость</a>
+            </div>
+            <div class="footer-col">
+                <h4>Контакты</h4>
+                <p>88005553535</p>
+                <p>parta@mail.ru</p>
+                <p>Ульяновск, Россия</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/main.js' %}"></script>
 </body>
 </html>
