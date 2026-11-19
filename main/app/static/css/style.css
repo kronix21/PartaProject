@@ -139,7 +139,6 @@ a{
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-
 }
 
 .slider-btn.prev:active {
@@ -236,6 +235,7 @@ a{
 @media (max-width: 768px) {
   .burger {
     display: flex;
+    
   }
 
   .nav, .nav1 {
@@ -262,8 +262,13 @@ a{
 
   .nav.active, .nav1.active {
     display: flex;
+    align-items: start;
   }
 
+  .dot{
+    display: none;
+  }
+  
   .nav.active a:hover {
     color: #232663;
   }

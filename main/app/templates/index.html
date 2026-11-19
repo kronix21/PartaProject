@@ -4,15 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Парта - Главная</title>
+    <title>Главная</title>
     <link rel="stylesheet" href="{% static 'css/style.css'%}">
 </head>
 <body>
     <header class="header">
         <div class="container header-content">
-            <div class="logo">
-                <img src="{% static 'img/logo.svg' %}" alt="Logo">
-            </div>
+            <a class="logo" href="{% url 'index' %}">
+                <img src="{% static 'img/logo.svg' %}" alt="Logo" loading="lazy" width="161" height="51">
+            </a>
             
             <div class="burger" id="burger">
                 <span></span>
@@ -21,13 +21,13 @@
             </div>
 
             <nav class="nav" id="nav">
-                <a href="#">Каталог</a>
-                <a href="#">Оборудования</a>
-                <a href="#">Ремонт</a>
-                <a href="#">Ведомость</a>
-                <a href="#">Вход</a>
-                <a href="#">Регистрация</a>
-                <a href="#" class="profile-link" id="nav1"><img src="{% static 'img/profile-img.png' %}" alt="Logo" class="dot">Профиль</a>
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'equipment' %}">Оборудования</a>
+                <a href="{% url 'repairs' %}">Ремонт</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
+                <a href="{% url 'signin' %}">Вход</a>
+                <a href="{% url 'signup' %}">Регистрация</a>
+                <a href="{% url 'profile' %}" class="profile-link" id="nav1"><img src="{% static 'img/profile-img.png' %}" alt="Logo" class="dot">Профиль</a>
             </nav>
         </div>
     </header>
@@ -37,9 +37,9 @@
             <section class="slider-section">
                 <div class="slider-window">
                     <div class="slider-track" id="sliderTrack">
-                        <img src="{% static 'img/class1.png' %}" alt="Класс">
-                        <img src="{% static 'img/class2.png' %}" alt="Класс 2">
-                        <img src="{% static 'img/class1.png' %}" alt="Класс 3">
+                        <img src="{% static 'img/class1.png' %}" alt="Класс" loading="lazy" width="1155" height="400">
+                        <img src="{% static 'img/class2.png' %}" alt="Класс 2" loading="lazy" width="1155" height="400">
+                        <img src="{% static 'img/class1.png' %}" alt="Класс 3" loading="lazy" width="1155" height="400">
                     </div>
                 </div>
                 <div class="contoler">
@@ -57,16 +57,16 @@
                 <h2>Нам доверяют</h2>
                 <div class="partners-grid">
                     <div class="partner-item">
-                        <img src="{% static 'img/dov.png' %}" alt="Партнер 1">
+                        <img src="{% static 'img/dov.png' %}" alt="Партнер" loading="lazy" width="120" height="120">
                     </div>
                     <div class="partner-item">
-                        <img src="{% static 'img/dov1.png' %}" alt="Партнер 2">
+                        <img src="{% static 'img/dov1.png' %}" alt="Партнер" loading="lazy" width="120" height="120">
                     </div>
                     <div class="partner-item">
-                        <img src="{% static 'img/dov2.png' %}" alt="Партнер 3">
+                        <img src="{% static 'img/dov2.png' %}" alt="Партнер" loading="lazy" width="120" height="120">
                     </div>
                     <div class="partner-item">
-                        <img src="{% static 'img/dov3.png' %}" alt="Партнер 4">
+                        <img src="{% static 'img/dov3.png' %}" alt="Партнер" loading="lazy" width="120" height="120">
                     </div>
                 </div>
             </section>
@@ -89,15 +89,15 @@
             </div>
             <div class="footer-col">
                 <h4>Для клиентов</h4>
-                <a href="#">Каталог</a>
-                <a href="#">Главная</a>
-                <a href="#">Профиль</a>
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'index' %}">Главная</a>
+                <a href="{% url 'profile' %}">Профиль</a>
             </div>
             <div class="footer-col">
                 <h4>Для сотрудников</h4>
-                <a href="#">Оборудование</a>
-                <a href="#">Ремонты</a>
-                <a href="#">Ведомость</a>
+                <a href="{% url 'equipment' %}">Оборудование</a>
+                <a href="{% url 'repairs' %}">Ремонты</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
             </div>
             <div class="footer-col">
                 <h4>Контакты</h4>
