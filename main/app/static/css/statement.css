@@ -1,0 +1,201 @@
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; 
+}
+
+main {
+    flex: 1;
+}
+
+.page-title {
+    color: var(--color-primary);
+    font-size: var(--font-h1);
+    line-height: 1.1;
+    margin-top: 30px;
+    margin-bottom: 40px;
+    font-weight: bold;
+}
+
+.statement-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.control-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.control-label {
+    font-weight: bold;
+    color: var(--color-primary);
+    font-size: 18px;
+}
+
+.select-wrapper select {
+    background-color: transparent;
+    border: 2px solid var(--color-primary);
+    color: var(--color-primary);
+    padding: 8px 30px 8px 15px;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23232663' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 15px;
+}
+
+.control-right {
+    display: flex;
+    gap: 15px;
+}
+
+.btn-outline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 2px solid var(--color-primary);
+    color: var(--color-primary);
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-outline:hover {
+    background-color: var(--color-secondary);
+    border: 1px solid white;
+}
+
+.statement-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: 40px;
+}
+
+.statement-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.statement-table th {
+    color: var(--color-secondary);
+    font-weight: bold;
+    font-size: 16px;
+    padding: 15px 10px;
+    border-bottom: none;
+}
+
+.statement-table td {
+    color: var(--color-primary);
+    font-size: 16px;
+    padding: 15px 10px;
+    border-bottom: none;
+}
+
+.empty-message {
+    text-align: center;
+    color: #777;
+    padding: 30px !important;
+}
+
+.statement-footer {
+    margin-bottom: 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.signature-row {
+    display: flex;
+    font-size: 16px;
+    color: var(--color-primary);
+}
+
+.signature-label {
+    font-weight: bold;
+    width: 150px;
+    flex-shrink: 0;
+}
+
+@media print {
+    .header,
+    .footer,
+    .control-right,
+    .control-left,
+    .burger,
+    .nav {
+        display: none !important;
+    }
+    ::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 36px;
+        margin-bottom: 20px;
+    }
+
+    .statement-controls {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .control-left {
+        gap: 10px;
+    }
+
+    .control-label {
+        font-size: 14px;
+    }
+
+    .select-wrapper select {
+        padding: 6px 25px 6px 10px;
+        font-size: 14px;
+    }
+
+    .control-right .btn-outline:first-child {
+        display: none;
+    }
+
+    .btn-outline {
+        padding: 6px 15px;
+        font-size: 14px;
+    }
+
+    .statement-table th,
+    .statement-table td {
+        white-space: nowrap;
+        font-size: 14px;
+        padding: 10px 8px;
+    }
+
+    .signature-row {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .signature-label {
+        width: 100%;
+    }
+    
+    .signature-name {
+        min-width: 100%;
+    }
+}

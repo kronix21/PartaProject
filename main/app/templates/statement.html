@@ -1,13 +1,171 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/statement.css' %}">
     <title>Ведомость</title>
+    <link rel="stylesheet" href="{% static 'css/style.css'%}">
+    <link rel="stylesheet" href="{% static 'css/statement.css'%}">
 </head>
 <body>
-    
+    <header class="header">
+        <div class="container header-content">
+            <a class="logo" href="{% url 'index' %}">
+                <img src="{% static 'img/logo.svg' %}" alt="Logo" loading="lazy" width="161" height="51">
+            </a>
+            
+            <div class="burger" id="burger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <nav class="nav" id="nav">
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'repairs' %}">Ремонт</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
+                
+                {% if user.is_authenticated %}
+                <div class="profile_avatar">
+                    <a href="{% url 'profile' %}" class="profile-link active" id="nav1">
+                        <img src="{{ profile.avatar.url }}" alt="Logo" class="dot" width="40px" height="40px">
+                    </a>
+                    <form class="logout-form" action="{% url 'signout' %}" method="post">
+                        {% csrf_token %}
+                        <button href="{% url 'index' %}" class="logout" type="submit">Выйти из аккаунта</button>
+                    </form>
+                </div>
+                {% else %}
+                <a href="{% url 'signin' %}">Вход</a>
+                <a href="{% url 'signup' %}">Регистрация</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-bg">
+        <div class="container">
+            <h1 class="page-title">Ведомость по кабинету</h1>
+
+            <form method="GET" action="{% url 'statement' %}" class="statement-controls">
+                <div class="control-left">
+                    <label for="cabinet-select" class="control-label">Аудитория:</label>
+                    <div class="select-wrapper">
+                        <select id="cabinet-select" name="cabinet" onchange="this.form.submit()">
+                            {% for cabinet in cabinets %}
+                                <option value="{{ cabinet.id }}" {% if cabinet.id == selected_cabinet.id %}selected{% endif %}>
+                                    {{ cabinet.number }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="control-right">
+                    <button type="button" class="btn-outline" onclick="window.print()">Печать<img src="{% static 'img/print.svg' %}" alt=""></button>
+                    <button type="button" id="btnDownloadPdf" class="btn-outline">Скачать<img src="{% static 'img/download.svg' %}" alt=""></button>
+                </div>
+            </form>
+
+            <div class="statement-table-wrapper">
+                <table class="statement-table">
+                    <thead>
+                        <tr>
+                            <th>Инв. номер</th>
+                            <th>Название</th>
+                            <th>Модель</th>
+                            <th>Серийный номер</th>
+                            <th>Статус</th>
+                            <th>Ответственный</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in equipments %}
+                        <tr>
+                            <td>{{ item.inventory_number }}</td>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.model }}</td>
+                            <td>{{ item.serial_number }}</td>
+                            <td>{{ item.get_status_display }}</td>
+                            <td>
+                                {% if item.responsible %}
+                                    {{ item.responsible.full_name }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="empty-message">В этом кабинете нет оборудования</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="statement-footer">
+                <div class="signature-row">
+                    <span class="signature-label">Ответственный:</span>
+                    <span class="signature-name">
+                        {% if selected_cabinet and selected_cabinet.equipments.first.responsible %}
+                            {{ selected_cabinet.equipments.first.responsible.full_name }}
+                        {% else %}
+                            
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="signature-row">
+                    <span class="signature-label">Бухгалтер:</span>
+                    <span class="signature-name"></span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="logo white-logo">
+                    <img src="{% static 'img/logo_footer.svg' %}" alt="Logo">
+                </div>
+                <p>Пн - пт с 07:00 до 19:00</p>
+            </div>
+            <div class="footer-col">
+                <h4>Для клиентов</h4>
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'index' %}">Главная</a>
+                <a href="{% url 'profile' %}">Профиль</a>
+            </div>
+            <div class="footer-col">
+                <h4>Для сотрудников</h4>
+                <a href="{% url 'repairs' %}">Ремонты</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
+            </div>
+            <div class="footer-col">
+                <h4>Контакты</h4>
+                <p>88005553535</p>
+                <p>parta@mail.ru</p>
+                <p>Ульяновск, Россия</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/burger.js' %}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        document.getElementById('btnDownloadPdf').addEventListener('click', function() {
+            const element = document.querySelector('.container'); 
+            const opt = {
+                margin:       10,
+                filename:     'equipments_cabinet.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        });
+    </script>
 </body>
 </html>

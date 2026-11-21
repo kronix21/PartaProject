@@ -1,13 +1,182 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/repairs.css' %}">
     <title>Ремонты</title>
+    <link rel="stylesheet" href="{% static 'css/style.css'%}">
+    <link rel="stylesheet" href="{% static 'css/repairs.css'%}">
+    <link rel="stylesheet" href="{% static 'css/catalog.css'%}">
 </head>
 <body>
     
+    <header class="header">
+        <div class="container header-content">
+            <a class="logo" href="{% url 'index' %}">
+                <img src="{% static 'img/logo.svg' %}" alt="Logo" loading="lazy" width="161" height="51">
+            </a>
+            
+            <div class="burger" id="burger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <nav class="nav" id="nav">
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'repairs' %}">Ремонт</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
+                
+                {% if user.is_authenticated %}
+                <div class="profile_avatar">
+                    <a href="{% url 'profile' %}" class="profile-link active" id="nav1">
+                        <img src="{{ profile.avatar.url }}" alt="Logo" class="dot" width="40px" height="40px">
+                    </a>
+                    <form class="logout-form" action="{% url 'signout' %}" method="post">
+                        {% csrf_token %}
+                        <button href="{% url 'index' %}" class="logout" type="submit">Выйти из аккаунта</button>
+                    </form>
+                </div>
+                {% else %}
+                <a href="{% url 'signin' %}">Вход</a>
+                <a href="{% url 'signup' %}">Регистрация</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-bg">
+        <div class="container">
+            <h1 class="page-title">Ремонты</h1>
+            <div class="repairs-container">
+                <div class="repairs-table-wrapper">
+                    <table class="repairs-table">
+                        <thead>
+                            <tr>
+                                <th>Номер оборудования</th>
+                                <th>Дата заявки</th>
+                                <th>Неисправность</th>
+                                <th>Техник</th>
+                                <th>Статус</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for repair in page_obj  %}
+                            <tr>
+                                <td>{{ repair.equipment.inventory_number }}</td>
+                                <td>{{ repair.request_date|date:"d.m.Y" }}</td>
+                                <td>{{ repair.description }}</td>
+                                <td>
+                                    {% if repair.technician %}
+                                        {{ repair.technician }}
+                                    {% else %}
+                                        Не назначен
+                                    {% endif %}
+                                </td>
+                                <td>{{ repair.get_status_display }}</td>
+                                <td>
+                                    <button class="btn-remove-repair" 
+                                            data-id="{{ repair.id }}" 
+                                            data-equipment="{{ repair.equipment.inventory_number }}"
+                                            data-technician="{{ repair.technician.id|default:'' }}">
+                                        Снять с ремонта
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr class="empty-row">
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <img src="{% static 'img/logo_notfound.svg' %}" alt="Ничего не найдено">
+                                        <p>Ничего не найдено</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if page_obj.has_next %}
+                <div class="load-more-block">
+                    <a href="?page={{ page_obj.next_page_number }}" class="btn-load-more">
+                        Показать еще <img src="{% static 'img/menu.svg' %}" alt="">
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+    <dialog id="modalRemoveRepair" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">Снять с ремонта</h2>
+            
+            <form method="POST" action="close_repair/" class="modal-form" id="removeRepairForm">
+                {% csrf_token %}
+                <input type="hidden" name="repair_id" id="modalRepairId">
+                
+                <div class="modal-group">
+                    <label>Номер оборудования:</label>
+                    <input type="text" id="modalEquipmentNumber" readonly>
+                </div>
+                
+                <div class="modal-group">
+                    <label>Техник</label>
+                    <select id="modalTechnician" name="technician">
+                        {% for employee in employees %}
+                            <option value="{{ employee.id }}">{{ employee }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="modal-group">
+                    <label>Результат ремонта</label>
+                    <textarea rows="3" name="result" placeholder="Опишите результат..." required></textarea>
+                </div>
+                
+                <div class="modal-group">
+                    <label>Статус</label>
+                    <select name="status">
+                        <option value="completed">Завершен</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="modal-btn-submit">Снять с ремонта</button>
+            </form>
+        </div>
+    </dialog>
+
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="logo white-logo">
+                    <img src="{% static 'img/logo_footer.svg' %}" alt="Logo">
+                </div>
+                <p>Пн - пт с 07:00 до 19:00</p>
+            </div>
+            <div class="footer-col">
+                <h4>Для клиентов</h4>
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'index' %}">Главная</a>
+                <a href="{% url 'profile' %}">Профиль</a>
+            </div>
+            <div class="footer-col">
+                <h4>Для сотрудников</h4>
+                <a href="{% url 'repairs' %}">Ремонты</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
+            </div>
+            <div class="footer-col">
+                <h4>Контакты</h4>
+                <p>88005553535</p>
+                <p>parta@mail.ru</p>
+                <p>Ульяновск, Россия</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/burger.js' %}"></script>
+    <script src="{% static 'js/repairs.js' %}"></script>
 </body>
 </html>

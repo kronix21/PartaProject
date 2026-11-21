@@ -1,13 +1,53 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/signup.css' %}">
     <title>Регистрация</title>
+    <link rel="stylesheet" href="{% static 'css/style.css'%}">
+    <link rel="stylesheet" href="{% static 'css/auth.css'%}">
 </head>
 <body>
-    
+    <main class="auth-page">
+        <section class="auth-sidebar">
+            <a class="logo auth-logo" href="{% url 'index' %}">
+                <img src="{% static 'img/logo_login.svg' %}" alt="Logo">
+            </a>
+            <div class="auth-sidebar-text">
+                <h1>Приятно видеть Вас с нами!</h1>
+                <p>Присоединяйтесь к нашей дружной команде</p>
+            </div>
+        </section>
+        <section class="auth-content">
+            <div class="auth-form-wrapper">
+                <h2>Регистрация</h2>
+                <p class="auth-subtitle">Рады познакомиться</p>
+                
+                <form method="post" action="add_user/">
+                    {% csrf_token %}
+                    <div class="auth-group">
+                        <label>Номер телефона</label>
+                        <input type="tel" name="phone" required>
+                    </div>
+                    <div class="auth-group">
+                        <label>Пароль</label>
+                        <input type="password" name="password" required>
+                    </div>
+                    <div class="auth-group">
+                        <label>Email</label>
+                        <input type="email" name="email" required>
+                    </div>
+                    
+                    <div class="auth-bottom">
+                        <button type="submit" class="auth-btn">Зарегистрироваться</button>
+                        <a href="{% url 'signup_staff' %}" class="auth-link">Зарегистрироваться как сотрудник</a>
+                        <a href="{% url 'signin' %}" class="auth-link">Вход</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+    </main>
 </body>
 </html>

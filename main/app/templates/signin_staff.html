@@ -1,13 +1,49 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/signin_staff.css' %}">
     <title>Вход как сотрудник</title>
+    <link rel="stylesheet" href="{% static 'css/style.css'%}">
+    <link rel="stylesheet" href="{% static 'css/auth.css'%}">
 </head>
 <body>
-    
+    <main class="auth-page">
+        <section class="auth-sidebar">
+            <a class="logo auth-logo" href="{% url 'index' %}">
+                <img src="{% static 'img/logo_login.svg' %}" alt="Logo">
+            </a>
+            <div class="auth-sidebar-text">
+                <h1>Снова здравствуйте!</h1>
+                <p>Посмотрите что нового</p>
+            </div>
+        </section>
+
+        <section class="auth-content">
+            <div class="auth-form-wrapper">
+                <h2>Вход как сотрудник</h2>
+                <p class="auth-subtitle">Рады видеть вас снова</p>
+                
+                <form method="post" action="{% url 'signin' %}">
+                    {% csrf_token %}
+                    <div class="auth-group">
+                        <label>Номер телефона</label>
+                        <input type="tel" name="phone" required>
+                    </div>
+                    <div class="auth-group">
+                        <label>Пароль</label>
+                        <input type="password" name="password" required>
+                    </div>
+
+                    <div class="auth-bottom">
+                        <button type="submit" class="auth-btn">Войти</button>
+                        <a href="{% url 'signin' %}" class="auth-link">Назад</a>
+                        <a href="{% url 'signup_staff' %}" class="auth-link">Зарегистрироваться как сотрудник</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
 </body>
 </html>

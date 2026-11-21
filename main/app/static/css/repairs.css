@@ -1,0 +1,258 @@
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; 
+}
+
+main {
+    flex: 1;
+}
+
+.page-title {
+    color: var(--color-primary);
+    font-size: var(--font-h1);
+    line-height: 1.1;
+    margin-top: 30px;
+    margin-bottom: 40px;
+    font-weight: bold;
+}
+
+.repairs-container {
+    margin-bottom: 60px;
+}
+
+.repairs-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.repairs-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.repairs-table th {
+    color: #777; 
+    font-weight: normal;
+    font-size: 16px;
+    padding: 15px 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.repairs-table td {
+    color: var(--color-primary);
+    font-size: 18px;
+    font-weight: bold;
+    padding: 15px 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.btn-remove-repair {
+    background-color: var(--color-secondary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s;
+    white-space: nowrap;
+}
+
+.btn-remove-repair:hover {
+    background-color: #8b1c24;
+}
+
+.empty-row td {
+    text-align: center;
+    padding: 40px 0;
+    border-bottom: none;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    color: var(--color-primary);
+}
+
+.empty-state img {
+    width: 50px;
+    opacity: 0.7;
+}
+
+.empty-state p {
+    font-size: 18px;
+    color: var(--color-primary);
+}
+
+.load-more-block {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.btn-load-more {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+    padding: 10px 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.repairs-mobile {
+    display: none;
+}
+
+.repair-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.repair-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.repair-label {
+    color: #777;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.repair-value {
+    color: var(--color-primary);
+    font-weight: bold;
+    font-size: 16px;
+    text-align: right;
+}
+
+.repair-card .btn-remove-repair {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    font-size: 16px;
+}
+
+.modal {
+    border: none;
+    border-radius: 20px;
+    padding: 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    background: transparent;
+    max-width: 450px;
+    width: 90%;
+    margin: auto;
+}
+
+.modal::backdrop {
+    background-color: rgba(35, 38, 99, 0.4);
+    backdrop-filter: blur(2px);
+}
+
+.modal-content {
+    background-color: var(--color-bg, #fff);
+    padding: 30px;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.modal-title {
+    color: var(--color-primary);
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.modal-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.modal-group label {
+    color: var(--color-primary);
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.modal-group input,
+.modal-group select,
+.modal-group textarea {
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 8px; 
+    padding: 10px 15px;
+    font-size: 16px;
+    outline: none;
+    width: 100%;
+    font-family: var(--font-family);
+}
+
+.modal-group textarea {
+    resize: none;
+    border-radius: 10px;
+}
+
+.modal-group input[readonly] {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.modal-btn-submit {
+    background-color: var(--color-secondary);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 12px 30px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 10px;
+    align-self: flex-start;
+    transition: background 0.3s;
+    font-family: var(--font-family);
+}
+
+.modal-btn-submit:hover {
+    background-color: #8b1c24;
+}
+
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 36px;
+        margin-bottom: 20px;
+    }
+
+    .repairs-mobile {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .modal-btn-submit {
+        width: 100%;
+        text-align: center;
+    }
+}

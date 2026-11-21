@@ -1,13 +1,150 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/catalog.css' %}">
     <title>Каталог</title>
+    <link rel="stylesheet" href="{% static 'css/style.css'%}">
+    <link rel="stylesheet" href="{% static 'css/catalog.css'%}">
+    <link rel="stylesheet" href="{% static 'css/repairs.css'%}">
 </head>
 <body>
     
+    <header class="header">
+        <div class="container header-content">
+            <a class="logo" href="{% url 'index' %}">
+                <img src="{% static 'img/logo.svg' %}" alt="Logo" loading="lazy" width="161" height="51">
+            </a>
+            
+            <div class="burger" id="burger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <nav class="nav" id="nav">
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'repairs' %}">Ремонт</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
+                
+                {% if user.is_authenticated %}
+                <div class="profile_avatar">
+                    <a href="{% url 'profile' %}" class="profile-link active" id="nav1">
+                        <img src="{{ profile.avatar.url }}" alt="Logo" class="dot" width="40px" height="40px">
+                    </a>
+                    <form class="logout-form" action="{% url 'signout' %}" method="post">
+                        {% csrf_token %}
+                        <button href="{% url 'index' %}" class="logout" type="submit">Выйти из аккаунта</button>
+                    </form>
+                </div>
+                {% else %}
+                <a href="{% url 'signin' %}">Вход</a>
+                <a href="{% url 'signup' %}">Регистрация</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+    <main class="main-bg">
+        <div class="container">
+            <div class="catalog-header">
+                <h1>Каталог</h1>
+                <form action="add_equipment/" method="get">
+                    <button class="btn-add" type="submit">Добавить оборудование</button>
+                </form>
+            </div>
+
+            <form method="GET" action="{% url 'catalog' %}" class="search-bar">
+                <input type="text" name="search" placeholder="Поиск по названию и номеру" value="{{ query }}">
+                <input type="hidden" name="status" value="{{ status }}">
+                <button type="submit" class="search-btn">
+                    <img src="{% static 'img/search.svg' %}" alt="">
+                </button>
+            </form>
+
+            <div class="catalog-layout">
+                <aside class="filters">
+                    <div class="filters-panel">
+                        <h3>Фильтры</h3>
+                        <div class="filters-contoler">
+                            <a href="?status=written_off&search={{ query }}" class="filter-btn {% if status == 'written_off' %}active{% endif %}">Списанные</a>
+                            <a href="?status=working&search={{ query }}" class="filter-btn {% if status == 'working' %}active{% endif %}">В работе</a>
+                            <a href="?status=repair&search={{ query }}" class="filter-btn {% if status == 'repair' %}active{% endif %}">На ремонте</a>
+                            <a href="{% url 'catalog' %}" class="btn-reset">Сбросить</a>
+                        </div>
+                    </div>
+                </aside>
+
+                <section class="products-area">
+                    {% if page_obj %}
+                    <div class="products-grid">
+                        {% for item in page_obj %}
+                            <a href="{% url 'equipment' item.id %}">
+                                <div class="product-card {% if item.status == 'written_off' %}card-gray{% else %}card-red{% endif %}">
+                                    <div class="card-image">
+                                        {% if item.photo %}
+                                            <img src="{{ item.photo.url }}" alt="{{ item.name }}">
+                                        {% else %}
+                                            <div class="empty-img"></div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="card-info">
+                                        <p>Название: {{ item.name }}</p>
+                                        <p>Инв. номер: {{ item.inventory_number }}</p>
+                                        <p>Статус: <span class="status-badge">{{ item.get_status_display }}</span></p>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if page_obj.has_next %}
+                    <div class="load-more-block">
+                        <a href="?page={{ page_obj.next_page_number }}&search={{ query }}&status={{ status }}" class="btn-load-more">
+                            Показать еще <img src="{% static 'img/menu.svg' %}" alt="">
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="empty-state">
+                        <img src="{% static 'img/logo_notfound.svg' %}" alt="Ничего не найдено">
+                        <p>Ничего не найдено</p>
+                    </div>
+                    {% endif %}
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="logo white-logo">
+                    <img src="{% static 'img/logo_footer.svg' %}" alt="Logo">
+                </div>
+                <p>Пн - пт с 07:00 до 19:00</p>
+            </div>
+            <div class="footer-col">
+                <h4>Для клиентов</h4>
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'index' %}">Главная</a>
+                <a href="{% url 'profile' %}">Профиль</a>
+            </div>
+            <div class="footer-col">
+                <h4>Для сотрудников</h4>
+                <a href="{% url 'repairs' %}">Ремонты</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
+            </div>
+            <div class="footer-col">
+                <h4>Контакты</h4>
+                <p>88005553535</p>
+                <p>parta@mail.ru</p>
+                <p>Ульяновск, Россия</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/burger.js' %}"></script>
 </body>
 </html>

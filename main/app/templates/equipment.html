@@ -1,13 +1,279 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/equipment.css' %}">
-    <title>Оборудование</title>
+    <title>Оборудование: {{ item.name }}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css'%}">
+    <link rel="stylesheet" href="{% static 'css/equipment.css'%}">
 </head>
 <body>
-    
+    <header class="header">
+        <div class="container header-content">
+            <a class="logo" href="{% url 'index' %}">
+                <img src="{% static 'img/logo.svg' %}" alt="Logo" loading="lazy" width="161" height="51">
+            </a>
+            
+            <div class="burger" id="burger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <nav class="nav" id="nav">
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'repairs' %}">Ремонт</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
+                
+                {% if user.is_authenticated %}
+                <div class="profile_avatar">
+                    <a href="{% url 'profile' %}" class="profile-link active" id="nav1">
+                        <img src="{{ profile.avatar.url }}" alt="Logo" class="dot" width="40px" height="40px">
+                    </a>
+                    <form class="logout-form" action="{% url 'signout' %}" method="post">
+                        {% csrf_token %}
+                        <button href="{% url 'index' %}" class="logout" type="submit">Выйти из аккаунта</button>
+                    </form>
+                </div>
+                {% else %}
+                <a href="{% url 'signin' %}">Вход</a>
+                <a href="{% url 'signup' %}">Регистрация</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-bg">
+        <div class="container">
+            <h1 class="page-title">Оборудование</h1>
+
+            <div class="detail-container">
+                <div class="detail-image">
+                    {% if item.photo %}
+                        <img src="{{ item.photo.url }}" alt="{{ item.name }}">
+                    {% else %}
+                        <img src="" alt="Нет фото">
+                    {% endif %}
+                </div>
+
+                <div class="detail-info">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Наименование:</span>
+                            <span class="info-value">{{ item.name }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Инв. номер:</span>
+                            <span class="info-value">{{ item.inventory_number }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Сер. номер:</span>
+                            <span class="info-value">{{ item.serial_number }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Номер аудитории:</span>
+                            <span class="info-value">{{ item.cabinet }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Тип оборудования:</span>
+                            <span class="info-value">{{ item.type }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Модель:</span>
+                            <span class="info-value">{{ item.model }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Ответственный:</span>
+                            <span class="info-value">{{ item.responsible }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Статус:</span>
+                            <span class="info-value">{{ item.get_status_display }}</span>
+                        </div>
+                    </div>
+
+                    <div class="history-table-wrapper">
+                        <h3 class="history-title">История перемещения:</h3>
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Перемещение</th>
+                                    <th>Ответственный</th>
+                                    <th>Причина</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for m in movements %}
+                                <tr>
+                                    <td>{{ m.date|date:"d.m.Y" }}</td>
+                                    <td>{{ m.from_cabinet.number|default:"—" }} → {{ m.to_cabinet.number }}</td>
+                                    <td>{{ m.to_responsible.full_name|default:"—" }}</td>
+                                    <td>{{ m.reason }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="empty-message">Перемещений нет</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="action-buttons">
+                        {% if item.status != 'written_off' %}
+                            <button class="btn btn-secondary" id="btnWriteOff">Списать</button>
+                            <form action="edit/" method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary" id="btnEdit">Редактировать</button>
+                            </form>
+                            <button class="btn btn-secondary" id="btnMove">Переместить</button>
+                            <button class="btn btn-secondary" id="btnRepair">Ремонт</button>
+                        {% else %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <dialog id="modalMove" class="modal">
+            <div class="modal-content">
+                <h2 class="modal-title">Перемещение оборудования</h2>
+                <form method="POST" action="move_equipment/" class="modal-form">
+                    {% csrf_token %}
+                    <div class="modal-group">
+                        <label>Оборудование:</label>
+                        <input type="text" value="{{ item.name }}" readonly>
+                    </div>
+                    <div class="modal-group">
+                        <label>Дата:</label>
+                        <input type="date" name="date" required value="{{ now|date:'Y-m-d' }}">
+                    </div>
+                    <div class="modal-group">
+                        <label>Кабинет (откуда):</label>
+                        <input type="text" value="{{ item.cabinet|default:'Не указан' }}" readonly>
+                    </div>
+                    <div class="modal-group">
+                        <label>Кабинет (куда)</label>
+                        <select name="to_cabinet" required>
+                            {% for cab in cabinets %}
+                                <option value="{{ cab.id }}">{{ cab.number }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="modal-group">
+                        <label>Ответственный:</label>
+                        <input type="text" value="{{ item.responsible|default:'—' }}" readonly>
+                    </div>
+                    <div class="modal-group">
+                        <label>Причина:</label>
+                        <input type="text" name="reason" required>
+                    </div>
+                    <button type="submit" class="modal-btn-submit">Переместить</button>
+                </form>
+            </div>
+        </dialog>
+
+        <dialog id="modalWriteOff" class="modal">
+            <div class="modal-content">
+                <h2 class="modal-title">Акт списания</h2>
+                <form method="POST" action="write_off_equipment/" class="modal-form">
+                    {% csrf_token %}
+                    <div class="modal-group">
+                        <label>№ Акта:</label>
+                        <input type="text" name="act_number" required>
+                    </div>
+
+                    <div class="modal-group">
+                        <label>Дата:</label>
+                        <input type="date" name="date" required value="{{ now|date:'Y-m-d' }}">
+                    </div>
+
+                    <div class="modal-group">
+                        <label>Причина:</label>
+                        <input type="text" name="reason" required>
+                    </div>
+
+                    <div class="modal-group">
+                        <label>Основание:</label>
+                        <input type="text" name="basis" required>
+                    </div>
+
+                    <div class="modal-group">
+                        <label>Оборудование:</label>
+                        <input type="text" value="{{ item.name }}" readonly>
+                    </div>
+
+                    <button type="submit" class="modal-btn-submit">Списать</button>
+                </form>
+            </div>
+        </dialog>
+
+        <dialog id="modalRepair" class="modal">
+            <div class="modal-content">
+                <h2 class="modal-title">Заявка на ремонт</h2>
+                <form method="POST" action="create_repair/" class="modal-form">
+                    {% csrf_token %}
+                    <div class="modal-group">
+                        <label>Оборудование:</label>
+                        <input type="text" value="{{ item.name }}" readonly>
+                    </div>
+
+                    <div class="modal-group">
+                        <label>Дата:</label>
+                        <input type="date" name="date" required value="{{ now|date:'Y-m-d' }}">
+                    </div>
+
+                    <div class="modal-group">
+                        <label>Техник:</label>
+                        <select name="technician" required>
+                            <option value="">Выберите техника</option>
+                            {% for emp in employees %}
+                                <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="modal-group">
+                        <label>Описание неисправности:</label>
+                        <textarea rows="3" name="description" required></textarea>
+                    </div>
+                    <button type="submit" class="modal-btn-submit">Сохранить заявку</button>
+                </form>
+            </div>
+        </dialog>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="logo white-logo">
+                    <img src="{% static 'img/logo_footer.svg' %}" alt="Logo">
+                </div>
+                <p>Пн - пт с 07:00 до 19:00</p>
+            </div>
+            <div class="footer-col">
+                <h4>Для клиентов</h4>
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'index' %}">Главная</a>
+                <a href="{% url 'profile' %}">Профиль</a>
+            </div>
+            <div class="footer-col">
+                <h4>Для сотрудников</h4>
+                <a href="{% url 'repairs' %}">Ремонты</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
+            </div>
+            <div class="footer-col">
+                <h4>Контакты</h4>
+                <p>88005553535</p>
+                <p>parta@mail.ru</p>
+                <p>Ульяновск, Россия</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/burger.js' %}"></script>
+    <script src="{% static 'js/modal.js' %}"></script>
 </body>
 </html>

@@ -1,6 +1,28 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.models import User
+
+
+class Profile(models.Model):
+    ROLE_CHOICES = [
+        ('user', 'Пользователь'),
+        ('admin', 'Администратор'),
+        ('technician', 'Техник'),
+        ('accountant', 'Бухгалтер'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    phone = models.CharField(max_length=20, blank=True, verbose_name="Телефон")
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, verbose_name="Аватар")
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default='user',
+        verbose_name="Роль"
+    )
+
+    def __str__(self):
+        return f"Профиль {self.user.username}"
 
 class EquipmentType(models.Model):
     name = models.CharField(max_length=100, unique=True, verbose_name="Название типа")
@@ -17,17 +39,16 @@ class EquipmentType(models.Model):
 
 class Cabinet(models.Model):
     number = models.CharField(max_length=20, unique=True, verbose_name="Номер кабинета")
-    building = models.CharField(max_length=50, verbose_name="Корпус")
     floor = models.IntegerField(verbose_name="Этаж")
     purpose = models.CharField(max_length=100, blank=True, null=True, verbose_name="Назначение")
 
     class Meta:
         verbose_name = "Кабинет"
         verbose_name_plural = "Кабинеты"
-        ordering = ['building', 'number']
+        ordering = ['number']
 
     def __str__(self):
-        return f"{self.building}, каб. {self.number}"
+        return f"каб. {self.number}"
 
 
 class Employee(models.Model):
@@ -47,8 +68,7 @@ class Employee(models.Model):
 
 class Equipment(models.Model):
     STATUS_CHOICES = [
-        ('new', 'Новое'),
-        ('working', 'В эксплуатации'),
+        ('working', 'В работе'),
         ('repair', 'В ремонте'),
         ('written_off', 'Списано'),
     ]
@@ -58,9 +78,15 @@ class Equipment(models.Model):
     model = models.CharField(max_length=100, verbose_name="Модель")
     serial_number = models.CharField(max_length=100, unique=True, verbose_name="Серийный номер")
     purchase_date = models.DateField(verbose_name="Дата поступления")
-    cost = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Стоимость")
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new', verbose_name="Состояние")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, verbose_name="Состояние")
     
+    photo = models.ImageField(
+        upload_to='equipment_photos/', 
+        null=True, 
+        blank=True, 
+        verbose_name="Фотография"
+    )
+
     type = models.ForeignKey(EquipmentType, on_delete=models.PROTECT, related_name='equipments', verbose_name="Тип оборудования")
     cabinet = models.ForeignKey(Cabinet, on_delete=models.SET_NULL, null=True, blank=True, related_name='equipments', verbose_name="Кабинет")
     responsible = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name='responsible_for', verbose_name="Ответственный")
@@ -148,7 +174,6 @@ class WriteOffAct(models.Model):
         return f"Акт списания №{self.act_number} от {self.date}"
 
     def save(self, *args, **kwargs):
-        # Автоматическая смена статуса оборудования при создании акта
         if self.equipment.status != 'written_off':
             self.equipment.status = 'written_off'
             self.equipment.cabinet = None
@@ -156,35 +181,3 @@ class WriteOffAct(models.Model):
             self.equipment.save()
         super().save(*args, **kwargs)
 
-
-# --- Связь Многие-ко-многим через явную модель (through) ---
-class Delivery(models.Model):
-    number = models.CharField(max_length=50, unique=True, verbose_name="Номер поставки")
-    date = models.DateField(verbose_name="Дата поставки")
-    supplier_name = models.CharField(max_length=150, verbose_name="Поставщик")
-    document_basis = models.CharField(max_length=100, verbose_name="Документ-основание")
-
-    class Meta:
-        verbose_name = "Поставка"
-        verbose_name_plural = "Поставки"
-        ordering = ['-date']
-
-    def __str__(self):
-        return f"Поставка №{self.number} от {self.date}"
-
-
-class DeliveryItem(models.Model):
-    delivery = models.ForeignKey(Delivery, on_delete=models.CASCADE, related_name='items', verbose_name="Поставка")
-    equipment = models.ForeignKey(Equipment, on_delete=models.PROTECT, related_name='delivery_items', verbose_name="Оборудование")
-    quantity = models.IntegerField(default=1, verbose_name="Количество")
-    price_at_delivery = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена на момент поставки")
-
-    class Meta:
-        verbose_name = "Позиция поставки"
-        verbose_name_plural = "Позиции поставки"
-        constraints = [
-            models.UniqueConstraint(fields=['delivery', 'equipment'], name='unique_equipment_in_delivery')
-        ]
-
-    def __str__(self):
-        return f"{self.equipment.inventory_number} в поставке {self.delivery.number}"

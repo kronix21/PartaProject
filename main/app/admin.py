@@ -1,8 +1,9 @@
 from django.contrib import admin
 from django.http import HttpResponse
+from django.utils.html import format_html
 from .models import (
     EquipmentType, Cabinet, Employee, Equipment, 
-    Movement, Repair, WriteOffAct, Delivery, DeliveryItem
+    Movement, Repair, WriteOffAct, Profile,
 )
 
 # --- FR-14: Действие для печати инвентаризационной ведомости ---
@@ -30,29 +31,65 @@ def print_inventory_sheet(modeladmin, request, queryset):
     html += "</body></html>"
     return HttpResponse(html)
 
-@admin.register(EquipmentType)  # <-- ДОБАВЛЕНО
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'phone', 'role')
+    list_filter = ('role',)
+    search_fields = ('user__username', 'phone')
+
+@admin.register(EquipmentType) 
 class EquipmentTypeAdmin(admin.ModelAdmin):
     list_display = ('name', 'description')
     search_fields = ('name',)
 
 @admin.register(Equipment)
 class EquipmentAdmin(admin.ModelAdmin):
-    list_display = ('inventory_number', 'name', 'model', 'type', 'cabinet', 'responsible', 'status')
-    list_filter = ('status', 'type', 'cabinet', 'responsible')
-    search_fields = ('inventory_number', 'name', 'serial_number', 'model')
-    actions = [print_inventory_sheet]
-    readonly_fields = ('id',)
+    list_display = (
+        'inventory_number', 
+        'name', 
+        'model', 
+        'get_status_display', 
+        'cabinet', 
+        'responsible', 
+        'show_photo'
+    )
+    
+    list_filter = ('status', 'type', 'cabinet')
+    
+    search_fields = ('inventory_number', 'name', 'serial_number')
+    
+    readonly_fields = ('show_photo_large',)
     
     fieldsets = (
-        ('Основная информация', {'fields': ('inventory_number', 'name', 'model', 'serial_number', 'type')}),
-        ('Финансы и состояние', {'fields': ('purchase_date', 'cost', 'status')}),
-        ('Размещение и ответственность', {'fields': ('cabinet', 'responsible')}),
+        ('Основная информация', {
+            'fields': ('inventory_number', 'name', 'model', 'serial_number', 'type')
+        }),
+        ('Дата', {
+            'fields': ('purchase_date',)
+        }),
+        ('Местоположение и ответственные', {
+            'fields': ('cabinet', 'responsible', 'status')
+        }),
+        ('Медиа', {
+            'fields': ('photo', 'show_photo_large')
+        }),
     )
+    def show_photo(self, obj):
+        if obj.photo:
+            return format_html('<img src="{}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;" />', obj.photo.url)
+        return "Нет фото"
+    show_photo.short_description = 'Фото' # Название колонки
+
+    def show_photo_large(self, obj):
+        if obj.photo:
+            return format_html('<img src="{}" style="max-width: 300px; max-height: 300px; border-radius: 10px;" />', obj.photo.url)
+        return "Фото не загружено"
+    show_photo_large.short_description = 'Текущее фото'
 
 @admin.register(Cabinet)
 class CabinetAdmin(admin.ModelAdmin):
-    list_display = ('number', 'building', 'floor', 'purpose')
-    search_fields = ('number', 'building')
+    list_display = ('number', 'floor', 'purpose')
+    search_fields = ('number',)
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
@@ -73,11 +110,3 @@ class RepairAdmin(admin.ModelAdmin):
 class WriteOffActAdmin(admin.ModelAdmin):
     list_display = ('act_number', 'date', 'equipment', 'reason')
     readonly_fields = ('act_number', 'date', 'reason', 'basis', 'equipment')
-
-@admin.register(Delivery)
-class DeliveryAdmin(admin.ModelAdmin):
-    list_display = ('number', 'date', 'supplier_name')
-
-@admin.register(DeliveryItem)
-class DeliveryItemAdmin(admin.ModelAdmin):
-    list_display = ('delivery', 'equipment', 'quantity', 'price_at_delivery')

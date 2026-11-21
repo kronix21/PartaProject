@@ -1,13 +1,170 @@
-{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+{% load static %}
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/add_equipment.css' %}">
     <title>Добавление оборудования</title>
+    <link rel="stylesheet" href="{% static 'css/style.css'%}">
+    <link rel="stylesheet" href="{% static 'css/add_equipment.css'%}">
 </head>
 <body>
     
+    <header class="header">
+        <div class="container header-content">
+            <a class="logo" href="{% url 'index' %}">
+                <img src="{% static 'img/logo.svg' %}" alt="Logo" loading="lazy" width="161" height="51">
+            </a>
+            
+            <div class="burger" id="burger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <nav class="nav" id="nav">
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'repairs' %}">Ремонт</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
+                
+                {% if user.is_authenticated %}
+                <div class="profile_avatar">
+                    <a href="{% url 'profile' %}" class="profile-link active" id="nav1">
+                        <img src="{{ profile.avatar.url }}" alt="Logo" class="dot" width="40px" height="40px">
+                    </a>
+                    <form class="logout-form" action="{% url 'signout' %}" method="post">
+                        {% csrf_token %}
+                        <button href="{% url 'index' %}" class="logout" type="submit">Выйти из аккаунта</button>
+                    </form>
+                </div>
+                {% else %}
+                <a href="{% url 'signin' %}">Вход</a>
+                <a href="{% url 'signup' %}">Регистрация</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-bg">
+        <div class="container">
+            <h1 class="page-title">Добавление<br>оборудования</h1>
+
+            <div class="form-container">
+                <form class="add-form" action="add/" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="form-image-col">
+                        <label for="image-upload" class="image-upload-label">
+                            <div class="avatar-placeholder" id="image-preview">
+                                <span>Фото</span>
+                            </div>
+                            <div class="upload-overlay">
+                                <span>Изменить фото</span>
+                            </div>
+                        </label>
+                        <input type="file" id="image-upload" name="photo" accept="image/*" class="hidden-input">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="inventory_number">Инв. номер</label>
+                            <input type="text" id="inventory_number" name="inventory_number" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="name">Наименование</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="serial_number">Серийный номер</label>
+                            <input type="text" id="serial_number" name="serial_number" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cabinet">Номер аудитории</label>
+                            <select id="cabinet" name="cabinet" required>
+                                <option value="">-</option>
+                                {% for cabinet in cabinets %}
+                                    <option value="{{ cabinet.id }}">{{ cabinet.number }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="type">Тип оборудования</label>
+                            <select id="type" name="type" required>
+                                <option value="">-</option>
+                                {% for type in types %}
+                                    <option value="{{ type.id }}">{{ type.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="model">Модель</label>
+                            <input type="text" id="model" name="model" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="purchase_date">Дата поступления</label>
+                            <input type="date" id="purchase_date" name="purchase_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="status">Статус</label>
+                            <select id="status" name="status" required>
+                                <option value="working">В работе</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="responsible">ФИО ответственного</label>
+                        <select id="responsible" name="responsible" required>
+                            <option value="">-</option>
+                            {% for employee in employees %}
+                                <option value="{{ employee.id }}">{{ employee.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Добавить оборудование</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="logo white-logo">
+                    <img src="{% static 'img/logo_footer.svg' %}" alt="Logo">
+                </div>
+                <p>Пн - пт с 07:00 до 19:00</p>
+            </div>
+            <div class="footer-col">
+                <h4>Для клиентов</h4>
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'index' %}">Главная</a>
+                <a href="{% url 'profile' %}">Профиль</a>
+            </div>
+            <div class="footer-col">
+                <h4>Для сотрудников</h4>
+                <a href="{% url 'repairs' %}">Ремонты</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
+            </div>
+            <div class="footer-col">
+                <h4>Контакты</h4>
+                <p>88005553535</p>
+                <p>parta@mail.ru</p>
+                <p>Ульяновск, Россия</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/burger.js' %}"></script>
 </body>
 </html>

@@ -1,13 +1,171 @@
-{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+{% load static %}
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/edit.css' %}">
     <title>Редактировать</title>
+    <link rel="stylesheet" href="{% static 'css/style.css'%}">
+    <link rel="stylesheet" href="{% static 'css/add_equipment.css'%}">
 </head>
 <body>
     
+    <header class="header">
+        <div class="container header-content">
+            <a class="logo" href="{% url 'index' %}">
+                <img src="{% static 'img/logo.svg' %}" alt="Logo" loading="lazy" width="161" height="51">
+            </a>
+            
+            <div class="burger" id="burger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <nav class="nav" id="nav">
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'repairs' %}">Ремонт</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
+                
+                {% if user.is_authenticated %}
+                <div class="profile_avatar">
+                    <a href="{% url 'profile' %}" class="profile-link active" id="nav1">
+                        <img src="{{ profile.avatar.url }}" alt="Logo" class="dot" width="40px" height="40px">
+                    </a>
+                    <form class="logout-form" action="{% url 'signout' %}" method="post">
+                        {% csrf_token %}
+                        <button href="{% url 'index' %}" class="logout" type="submit">Выйти из аккаунта</button>
+                    </form>
+                </div>
+                {% else %}
+                <a href="{% url 'signin' %}">Вход</a>
+                <a href="{% url 'signup' %}">Регистрация</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-bg">
+        <div class="container">
+            <h1 class="page-title">Редактировать</h1>
+
+            <div class="form-container">
+                <form class="add-form" action="save_edit/" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="form-image-col">
+                        <label for="image-upload" class="image-upload-label">
+                            <div class="image-preview" id="image-preview">
+                                {% if not item.photo %}<span>Фото</span>{% endif %}
+                            </div>
+                            <div class="upload-overlay"><span>Изменить фото</span></div>
+                        </label>
+                        <input type="file" id="image-upload" name="photo" accept="image/*" class="hidden-input">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Инв. номер</label>
+                            <input type="text" name="inventory_number" value="{{ item.inventory_number }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Наименование</label>
+                            <input type="text" name="name" value="{{ item.name }}" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Серийный номер</label>
+                            <input type="text" name="serial_number" value="{{ item.serial_number }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Номер аудитории</label>
+                            <select name="cabinet" required>
+                                {% for cab in cabinets %}
+                                    <option value="{{ cab.id }}" {% if item.cabinet.id == cab.id %}selected{% endif %}>
+                                        {{ cab.number }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Тип оборудования</label>
+                            <select name="type" required>
+                                {% for t in types %}
+                                    <option value="{{ t.id }}" {% if item.type.id == t.id %}selected{% endif %}>
+                                        {{ t.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Модель</label>
+                            <input type="text" name="model" value="{{ item.model }}" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Дата поступления</label>
+                            <input type="date" name="purchase_date" value="{{ item.purchase_date|date:'Y-m-d' }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Статус</label>
+                            <select name="status" required>
+                                <option value="working" {% if item.status == 'working' %}selected{% endif %}>В работе</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>ФИО ответственного</label>
+                        <select name="responsible" required>
+                            {% for emp in employees %}
+                                <option value="{{ emp.id }}" {% if item.responsible.id == emp.id %}selected{% endif %}>
+                                    {{ emp.full_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Сохранить изменения</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="logo white-logo">
+                    <img src="{% static 'img/logo_footer.svg' %}" alt="Logo">
+                </div>
+                <p>Пн - пт с 07:00 до 19:00</p>
+            </div>
+            <div class="footer-col">
+                <h4>Для клиентов</h4>
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'index' %}">Главная</a>
+                <a href="{% url 'profile' %}">Профиль</a>
+            </div>
+            <div class="footer-col">
+                <h4>Для сотрудников</h4>
+                <a href="{% url 'repairs' %}">Ремонты</a>
+                <a href="{% url 'statement' %}">Ведомость</a>
+            </div>
+            <div class="footer-col">
+                <h4>Контакты</h4>
+                <p>88005553535</p>
+                <p>parta@mail.ru</p>
+                <p>Ульяновск, Россия</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/burger.js' %}"></script>
 </body>
 </html>
