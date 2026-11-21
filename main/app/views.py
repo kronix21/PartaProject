@@ -9,6 +9,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.models import User
+import re
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 def index(request):
     profile = None
@@ -271,16 +274,37 @@ def signin(request):
     return TemplateResponse(request, 'signin.html')
 
 def auth(request):
-    phone = request.POST.get('phone')
-    password = request.POST.get('password')
-    
+    if request.method != 'POST':
+        return redirect('signin')
+
+    phone = request.POST.get('phone', '').strip()
+    password = request.POST.get('password', '')
+
+    errors = []
+
+    if not phone:
+        errors.append("Введите номер телефона.")
+    else:
+        phone_clean = phone.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+        phone_pattern = re.compile(r'^(\+7|8|7)\d{10}$')
+        if not phone_pattern.match(phone_clean):
+            errors.append("Неверный формат телефона. Пример: +79001234567.")
+
+    if not password:
+        errors.append("Введите пароль.")
+
+    if errors:
+        for err in errors:
+            messages.error(request, err)
+        return redirect('signin')
+
     user = authenticate(request, username=phone, password=password)
-    
+
     if user is not None:
         login(request, user)
         return redirect('profile')
     else:
-        messages.error(request, "Неверный телефон или пароль")
+        messages.error(request, "Неверный телефон или пароль.")
         return redirect('signin')
 
 def signup_staff(request):
@@ -290,12 +314,43 @@ def signup(request):
     return TemplateResponse(request, 'signup.html')
 
 def add_user(request):
-    phone = request.POST.get('phone')
-    email = request.POST.get('email')
-    password = request.POST.get('password')
+    if request.method != 'POST':
+        return redirect('signup')
+
+    phone = request.POST.get('phone', '').strip()
+    email = request.POST.get('email', '').strip()
+    password = request.POST.get('password', '')
+    password_confirm = request.POST.get('password_confirm', '')
+
+    errors = []
+
+    phone_pattern = re.compile(r'^(\+7|8|7)?[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}$')
+    if not phone:
+        errors.append("Введите номер телефона.")
+    elif not phone_pattern.match(phone):
+        errors.append("Неверный формат номера телефона. Пример: +79001234567 или 89001234567.")
+
+    if not email:
+        errors.append("Введите email.")
+    else:
+        try:
+            validate_email(email)
+        except ValidationError:
+            errors.append("Неверный формат email.")
+
+    if not password:
+        errors.append("Введите пароль.")
+    elif len(password) < 8:
+        errors.append("Пароль должен содержать минимум 8 символов.")
+    elif not re.search(r'\d', password):
+        errors.append("Пароль должен содержать хотя бы одну цифру.")
 
     if User.objects.filter(username=phone).exists():
-        messages.error(request, "Пользователь с таким телефоном уже существует")
+        errors.append("Пользователь с таким номером телефона уже существует.")
+
+    if errors:
+        for err in errors:
+            messages.error(request, err)
         return render(request, 'signup.html')
 
     user = User.objects.create_user(
@@ -303,10 +358,9 @@ def add_user(request):
         email=email,
         password=password,
     )
-    
-    Profile.objects.create(user=user, phone=phone)
-    login(request, user)
+    Profile.objects.create(user=user, phone=phone, role='user')
 
+    login(request, user)
     return redirect('profile')
 
 def signout(request):

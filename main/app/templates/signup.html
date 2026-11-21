@@ -23,8 +23,15 @@
             <div class="auth-form-wrapper">
                 <h2>Регистрация</h2>
                 <p class="auth-subtitle">Рады познакомиться</p>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="auth-error">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
                 
-                <form method="post" action="add_user/">
+                <form method="post" action="{% url 'add_user' %}">
                     {% csrf_token %}
                     <div class="auth-group">
                         <label>Номер телефона</label>
@@ -41,7 +48,6 @@
                     
                     <div class="auth-bottom">
                         <button type="submit" class="auth-btn">Зарегистрироваться</button>
-                        <a href="{% url 'signup_staff' %}" class="auth-link">Зарегистрироваться как сотрудник</a>
                         <a href="{% url 'signin' %}" class="auth-link">Вход</a>
                     </div>
                 </form>

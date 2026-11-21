@@ -30,9 +30,9 @@ urlpatterns = [
     path('repairs/signout/', views.signout),
 
     path('signin/', views.signin, name='signin'),
-    path('signin/auth/', views.auth),
+    path('auth/', views.auth, name='auth'),
     path('signup/', views.signup, name='signup'),
-    path('signup/add_user/', views.add_user),
+    path('add_user/', views.add_user, name='add_user'),
 
     path('signin_staff/', views.signin_staff, name='signin_staff'),
     path('signup_staff/', views.signup_staff, name='signup_staff'),
