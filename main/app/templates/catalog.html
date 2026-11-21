@@ -25,22 +25,35 @@
 
             <nav class="nav" id="nav">
                 <a href="{% url 'catalog' %}">Каталог</a>
-                <a href="{% url 'repairs' %}">Ремонт</a>
-                <a href="{% url 'statement' %}">Ведомость</a>
-                
+
                 {% if user.is_authenticated %}
-                <div class="profile_avatar">
-                    <a href="{% url 'profile' %}" class="profile-link active" id="nav1">
-                        <img src="{{ profile.avatar.url }}" alt="Logo" class="dot" width="40px" height="40px">
-                    </a>
-                    <form class="logout-form" action="{% url 'signout' %}" method="post">
-                        {% csrf_token %}
-                        <button href="{% url 'index' %}" class="logout" type="submit">Выйти из аккаунта</button>
-                    </form>
-                </div>
+                    {% with role=user.profile.role %}
+                        {% if role == 'technician' or role == 'admin' %}
+                            <a href="{% url 'repairs' %}">Ремонт</a>
+                        {% endif %}
+                        {% if role == 'accountant' or role == 'admin' %}
+                            <a href="{% url 'statement' %}">Ведомость</a>
+                        {% endif %}
+                    {% endwith %}
+                
+                    <div class="profile_avatar">
+                        {% if profile.avatar %}
+                            <a href="{% url 'profile' %}" class="profile-link active" id="nav1">
+                                <img src="{{ profile.avatar.url }}" alt="Аватар" class="dot-profile" width="40px" height="40px">
+                            </a>
+                        {% else %}
+                            <a href="{% url 'profile' %}" class="profile-link active" id="nav1">
+                                <img src="{% static 'img/profile-img.png' %}" alt="Профиль" class="dot-profile">
+                            </a>
+                        {% endif %}
+                        <form class="logout-form" action="{% url 'signout' %}" method="post">
+                            {% csrf_token %}
+                            <button href="{% url 'index' %}" class="logout" type="submit">Выйти из аккаунта</button>
+                        </form>
+                    </div>
                 {% else %}
-                <a href="{% url 'signin' %}">Вход</a>
-                <a href="{% url 'signup' %}">Регистрация</a>
+                    <a href="{% url 'signin' %}">Вход</a>
+                    <a href="{% url 'signup' %}">Регистрация</a>
                 {% endif %}
             </nav>
         </div>

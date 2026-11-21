@@ -12,6 +12,7 @@ from django.contrib.auth.models import User
 import re
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from .decorators import role_required
 
 def index(request):
     profile = None
@@ -23,6 +24,7 @@ def index(request):
     }
     return TemplateResponse(request, 'index.html', context)
 
+@role_required(['user', 'technician', 'accountant'])
 @login_required(login_url='signin')
 def profile(request):
     profile_obj, created = Profile.objects.get_or_create(user=request.user)
@@ -45,6 +47,7 @@ def profile(request):
     }
     return TemplateResponse(request, 'profile.html', context)
 
+@role_required(['user', 'technician', 'accountant'])
 def equipment(request, pk):
     profile = None
     if request.user.is_authenticated:
@@ -88,6 +91,7 @@ def move_equipment(request, pk):
     
     return redirect('equipment', pk=item.pk)
     
+@role_required(['accountant'])
 def write_off_equipment(request, pk):
     item = get_object_or_404(Equipment, pk=pk)
     WriteOffAct.objects.create(
@@ -99,6 +103,7 @@ def write_off_equipment(request, pk):
     )
     return redirect('equipment', pk=item.pk)
     
+@role_required(['technician'])
 def create_repair(request, pk):
     item = get_object_or_404(Equipment, pk=pk)
     
@@ -119,7 +124,8 @@ def create_repair(request, pk):
     item.save()
     
     return redirect('equipment', pk=item.pk)
-    
+
+@role_required(['user', 'accountant'])
 def add_equipment(request):
     profile = None
     if request.user.is_authenticated:
@@ -137,6 +143,7 @@ def add_equipment(request):
     }
     return TemplateResponse(request, 'add_equipment.html', context)
 
+@role_required(['user', 'accountant'])
 def add(request):
     photo = request.FILES.get('photo') 
     inventory_number = request.POST.get('inventory_number')
@@ -196,6 +203,7 @@ def catalog(request):
     }
     return TemplateResponse(request, 'catalog.html', context)
 
+@role_required(['accountant'])
 def edit(request, pk):
     profile = None
     if request.user.is_authenticated:
@@ -212,6 +220,7 @@ def edit(request, pk):
     }
     return TemplateResponse(request, 'edit.html', context)
 
+@role_required(['accountant'])
 def save_edit(request, pk):
     item = get_object_or_404(Equipment, pk=pk)
     
@@ -230,6 +239,7 @@ def save_edit(request, pk):
     item.save()
     return redirect('equipment', pk=item.pk)
 
+@role_required(['technician'])
 def repairs(request):
     profile = None
     if request.user.is_authenticated:
@@ -248,6 +258,7 @@ def repairs(request):
     }
     return TemplateResponse(request, 'repairs.html', context)
 
+@role_required(['technician'])
 def close_repair(request):
     repair_id = request.POST.get('repair_id')
     technician_id = request.POST.get('technician')
@@ -367,6 +378,7 @@ def signout(request):
     logout(request)
     return redirect('index')
 
+@role_required(['accountant'])
 def statement(request):
     profile = None
     if request.user.is_authenticated:

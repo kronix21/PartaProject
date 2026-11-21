@@ -24,15 +24,28 @@
 
             <nav class="nav" id="nav">
                 <a href="{% url 'catalog' %}">Каталог</a>
-                <a href="{% url 'repairs' %}">Ремонт</a>
-                <a href="{% url 'statement' %}">Ведомость</a>
-                
+
                 {% if user.is_authenticated %}
-                    {% if profile.avatar %}
-                        <img src="{{ profile.avatar.url }}" alt="Аватар" class="dot-profile" width="40px" height="40px">
-                    {% else %}
-                        <img src="{% static 'img/profile-img.png' %}" alt="Профиль" class="dot-profile">
-                    {% endif %}
+                    {% with role=user.profile.role %}
+                        {% if role == 'technician' or role == 'admin' %}
+                            <a href="{% url 'repairs' %}">Ремонт</a>
+                        {% endif %}
+                        {% if role == 'accountant' or role == 'admin' %}
+                            <a href="{% url 'statement' %}">Ведомость</a>
+                        {% endif %}
+                    {% endwith %}
+
+                    <div class="profile_avatar">
+                        {% if profile.avatar %}
+                            <a href="{% url 'profile' %}" class="profile-link active" id="nav1">
+                                <img src="{{ profile.avatar.url }}" alt="Аватар" class="dot-profile" width="40px" height="40px">
+                            </a>
+                        {% else %}
+                            <a href="{% url 'profile' %}" class="profile-link active" id="nav1">
+                                <img src="{% static 'img/profile-img.png' %}" alt="Профиль" class="dot-profile">
+                            </a>
+                        {% endif %}
+                    </div>
                 {% else %}
                 <a href="{% url 'signin' %}">Вход</a>
                 <a href="{% url 'signup' %}">Регистрация</a>
