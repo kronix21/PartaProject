@@ -68,6 +68,10 @@ def equipment(request, pk):
 
 def move_equipment(request, pk):
     item = get_object_or_404(Equipment, pk=pk)
+
+    if item.status == 'written_off':
+        messages.error(request, "Перемещение списанного оборудования запрещено.")
+        return redirect('equipment', pk=item.pk)
     
     date_str = request.POST.get('date')
     to_cabinet_id = request.POST.get('to_cabinet')
@@ -108,6 +112,7 @@ def create_repair(request, pk):
     item = get_object_or_404(Equipment, pk=pk)
     
     if item.status == 'written_off':
+        messages.error(request, "Создание ремонта для списанного оборудования запрещено.")
         return redirect('equipment', pk=item.pk)
 
     technician_id = request.POST.get('technician')
