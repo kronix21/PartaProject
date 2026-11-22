@@ -156,6 +156,19 @@ def add(request):
     status = request.POST.get('status')
     responsible_id = request.POST.get('responsible')
 
+    errors = []
+
+    if inventory_number and Equipment.objects.filter(inventory_number=inventory_number).exists():
+        errors.append("Оборудование с таким инвентарным номером уже существует.")
+
+    if serial_number and Equipment.objects.filter(serial_number=serial_number).exists():
+        errors.append("Оборудование с таким серийным номером уже существует.")
+
+    if errors:
+        for err in errors:
+            messages.error(request, err)
+        return redirect('add_equipment')
+
     equipment = Equipment()
 
     equipment.inventory_number=inventory_number
