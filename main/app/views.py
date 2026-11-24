@@ -13,6 +13,7 @@ import re
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from .decorators import role_required
+from django.core.exceptions import ValidationError
 
 def index(request):
     profile = None
@@ -67,32 +68,61 @@ def equipment(request, pk):
     return TemplateResponse(request, 'equipment.html', context)
 
 def move_equipment(request, pk):
+    if request.method != 'POST':
+        return redirect('equipment', pk=pk)
+
     item = get_object_or_404(Equipment, pk=pk)
 
+    # 1. Списание — запрет перемещения
     if item.status == 'written_off':
         messages.error(request, "Перемещение списанного оборудования запрещено.")
         return redirect('equipment', pk=item.pk)
-    
+
     date_str = request.POST.get('date')
     to_cabinet_id = request.POST.get('to_cabinet')
     to_responsible_id = request.POST.get('to_responsible') or item.responsible_id
-    reason = request.POST.get('reason')
-    
-    Movement.objects.create(
-        equipment=item,
-        date=date_str,
-        from_cabinet=item.cabinet,
-        to_cabinet_id=to_cabinet_id,
-        from_responsible=item.responsible,
-        to_responsible_id=to_responsible_id,
-        reason=reason
-    )
-    
-    item.cabinet_id = to_cabinet_id
-    if to_responsible_id:
-        item.responsible_id = to_responsible_id
-    item.save()
-    
+    reason = (request.POST.get('reason') or '').strip()
+
+    # 2. Проверка обязательных полей (до создания Movement)
+    errors = []
+    if not date_str:
+        errors.append("Укажите дату перемещения.")
+    if not to_cabinet_id:
+        errors.append("Выберите кабинет назначения.")
+    if not reason:
+        errors.append("Укажите причину перемещения.")
+
+    if errors:
+        for err in errors:
+            messages.error(request, err)
+        return redirect('equipment', pk=item.pk)
+
+    # 3. Защита от ошибок БД (неверная дата, кабинет не существует и т.п.)
+    try:
+        Movement.objects.create(
+            equipment=item,
+            date=date_str,
+            from_cabinet=item.cabinet,
+            to_cabinet_id=to_cabinet_id,
+            from_responsible=item.responsible,
+            to_responsible_id=to_responsible_id,
+            reason=reason,
+        )
+        # Обновляем текущее расположение оборудования
+        item.cabinet_id = to_cabinet_id
+        if to_responsible_id:
+            item.responsible_id = to_responsible_id
+        item.full_clean()  # проверка модели (FR-10: запрет перемещения списанного)
+        item.save()
+    except ValidationError as e:
+        for msg in e.messages:
+            messages.error(request, msg)
+        return redirect('equipment', pk=item.pk)
+    except Exception as e:
+        messages.error(request, f"Не удалось выполнить перемещение: {e}")
+        return redirect('equipment', pk=item.pk)
+
+    messages.success(request, "Оборудование успешно перемещено.")
     return redirect('equipment', pk=item.pk)
     
 @role_required(['accountant'])
@@ -150,45 +180,76 @@ def add_equipment(request):
 
 @role_required(['user', 'accountant'])
 def add(request):
-    photo = request.FILES.get('photo') 
-    inventory_number = request.POST.get('inventory_number')
-    name = request.POST.get('name')
-    serial_number = request.POST.get('serial_number')
+    if request.method != 'POST':
+        return redirect('add_equipment')
+
+    photo = request.FILES.get('photo')
+    inventory_number = (request.POST.get('inventory_number') or '').strip()
+    name = (request.POST.get('name') or '').strip()
+    serial_number = (request.POST.get('serial_number') or '').strip()
     cabinet_id = request.POST.get('cabinet')
     type_id = request.POST.get('type')
-    model = request.POST.get('model')
+    model = (request.POST.get('model') or '').strip()
     purchase_date = request.POST.get('purchase_date')
     status = request.POST.get('status')
     responsible_id = request.POST.get('responsible')
 
     errors = []
 
+    # 1. Проверка обязательных полей (до save!)
+    required = {
+        'inventory_number': inventory_number,
+        'name': name,
+        'serial_number': serial_number,
+        'model': model,
+        'purchase_date': purchase_date,
+        'status': status,
+        'type': type_id,
+    }
+    if any(not v for v in required.values()):
+        errors.append("Заполните все обязательные поля.")
+
+    # 2. Проверка уникальности
     if inventory_number and Equipment.objects.filter(inventory_number=inventory_number).exists():
         errors.append("Оборудование с таким инвентарным номером уже существует.")
 
     if serial_number and Equipment.objects.filter(serial_number=serial_number).exists():
         errors.append("Оборудование с таким серийным номером уже существует.")
 
+    # 3. Проверка статуса (CheckConstraint)
+    valid_statuses = ['working', 'repair', 'written_off']
+    if status and status not in valid_statuses:
+        errors.append("Недопустимый статус оборудования.")
+
+    # Если есть ошибки — возвращаем на форму
     if errors:
         for err in errors:
             messages.error(request, err)
         return redirect('add_equipment')
 
-    equipment = Equipment()
+    # 4. Сохранение с защитой от ValidationError
+    try:
+        equipment = Equipment(
+            inventory_number=inventory_number,
+            name=name,
+            serial_number=serial_number,
+            model=model,
+            purchase_date=purchase_date,
+            status=status,
+            cabinet_id=cabinet_id or None,
+            type_id=type_id,
+            responsible_id=responsible_id or None,
+        )
+        if photo:
+            equipment.photo = photo
 
-    equipment.inventory_number=inventory_number
-    equipment.name=name
-    equipment.serial_number=serial_number
-    equipment.model=model
-    equipment.purchase_date=purchase_date
-    equipment.status=status
-    equipment.photo = photo
-    equipment.cabinet_id = cabinet_id
-    equipment.type_id = type_id
-    equipment.responsible_id = responsible_id
-        
-    equipment.save()
-    
+        equipment.full_clean()   # проверка модели (дата, constraint)
+        equipment.save()
+    except ValidationError as e:
+        for msg in e.messages:
+            messages.error(request, msg)
+        return redirect('add_equipment')
+
     return redirect('catalog')
 
 def catalog(request):
@@ -427,3 +488,6 @@ def statement(request):
         'profile': profile,
     }
     return TemplateResponse(request, 'statement.html', context)
+
+def test_500(request):
+    raise Exception("Тестовая ошибка")

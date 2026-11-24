@@ -59,6 +59,13 @@
 
     <main class="main-bg">
         <div class="container">
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="message message-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
             <h1 class="page-title">Оборудование</h1>
 
             <div class="detail-container">
