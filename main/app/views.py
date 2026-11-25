@@ -15,6 +15,10 @@ from django.core.exceptions import ValidationError
 from .decorators import role_required
 from django.core.exceptions import ValidationError
 
+import logging
+
+logger = logging.getLogger('app')
+
 def index(request):
     profile = None
     if request.user.is_authenticated:
@@ -73,9 +77,9 @@ def move_equipment(request, pk):
 
     item = get_object_or_404(Equipment, pk=pk)
 
-    # 1. Списание — запрет перемещения
     if item.status == 'written_off':
         messages.error(request, "Перемещение списанного оборудования запрещено.")
+        logger.warning(f"Попытка перемещения списанного | id={item.pk} | user={request.user.username}")
         return redirect('equipment', pk=item.pk)
 
     date_str = request.POST.get('date')
@@ -83,7 +87,6 @@ def move_equipment(request, pk):
     to_responsible_id = request.POST.get('to_responsible') or item.responsible_id
     reason = (request.POST.get('reason') or '').strip()
 
-    # 2. Проверка обязательных полей (до создания Movement)
     errors = []
     if not date_str:
         errors.append("Укажите дату перемещения.")
@@ -95,9 +98,9 @@ def move_equipment(request, pk):
     if errors:
         for err in errors:
             messages.error(request, err)
+        logger.warning(f"Ошибка перемещения (валидация) | id={item.pk} | {errors}")
         return redirect('equipment', pk=item.pk)
 
-    # 3. Защита от ошибок БД (неверная дата, кабинет не существует и т.п.)
     try:
         Movement.objects.create(
             equipment=item,
@@ -108,17 +111,19 @@ def move_equipment(request, pk):
             to_responsible_id=to_responsible_id,
             reason=reason,
         )
-        # Обновляем текущее расположение оборудования
         item.cabinet_id = to_cabinet_id
         if to_responsible_id:
             item.responsible_id = to_responsible_id
-        item.full_clean()  # проверка модели (FR-10: запрет перемещения списанного)
+        item.full_clean()
         item.save()
+        logger.info(f"Перемещение | id={item.pk} | to_cabinet={to_cabinet_id} | user={request.user.username}")
     except ValidationError as e:
         for msg in e.messages:
             messages.error(request, msg)
+        logger.warning(f"Ошибка валидации при перемещении | id={item.pk} | {e.messages}")
         return redirect('equipment', pk=item.pk)
     except Exception as e:
+        logger.error(f"Ошибка при перемещении | id={item.pk} | {e}", exc_info=True)
         messages.error(request, f"Не удалось выполнить перемещение: {e}")
         return redirect('equipment', pk=item.pk)
 
@@ -128,36 +133,61 @@ def move_equipment(request, pk):
 @role_required(['accountant'])
 def write_off_equipment(request, pk):
     item = get_object_or_404(Equipment, pk=pk)
-    WriteOffAct.objects.create(
-        act_number=request.POST.get('act_number'),
-        date=request.POST.get('date') or timezone.now().date(),
-        reason=request.POST.get('reason'),
-        basis=request.POST.get('basis'),
-        equipment=item
-    )
+
+    if item.status == 'written_off':
+        messages.error(request, "Оборудование уже списано.")
+        logger.warning(f"Повторное списание | id={item.pk}")
+        return redirect('equipment', pk=item.pk)
+
+    try:
+        WriteOffAct.objects.create(
+            act_number=request.POST.get('act_number'),
+            date=request.POST.get('date') or timezone.now().date(),
+            reason=request.POST.get('reason'),
+            basis=request.POST.get('basis'),
+            equipment=item
+        )
+        logger.info(f"Списание оборудования | id={item.pk} | inv={item.inventory_number} | user={request.user.username}")
+        messages.success(request, "Оборудование списано.")
+    except Exception as e:
+        logger.error(f"Ошибка при списании | id={item.pk} | {e}", exc_info=True)
+        messages.error(request, "Не удалось списать оборудование.")
+
     return redirect('equipment', pk=item.pk)
     
 @role_required(['technician'])
 def create_repair(request, pk):
     item = get_object_or_404(Equipment, pk=pk)
-    
+
     if item.status == 'written_off':
         messages.error(request, "Создание ремонта для списанного оборудования запрещено.")
+        logger.warning(f"Попытка ремонта списанного | id={item.pk}")
         return redirect('equipment', pk=item.pk)
 
     technician_id = request.POST.get('technician')
-    
-    Repair.objects.create(
-        equipment=item,
-        request_date=request.POST.get('date') or timezone.now().date(),
-        description=request.POST.get('description'),
-        technician_id=technician_id,
-        status='in_progress'
-    )
-    
-    item.status = 'repair'
-    item.save()
-    
+    description = (request.POST.get('description') or '').strip()
+
+    if not technician_id or not description:
+        messages.error(request, "Укажите техника и описание неисправности.")
+        logger.warning(f"Ошибка создания ремонта (валидация) | id={item.pk}")
+        return redirect('equipment', pk=item.pk)
+
+    try:
+        Repair.objects.create(
+            equipment=item,
+            request_date=request.POST.get('date') or timezone.now().date(),
+            description=description,
+            technician_id=technician_id,
+            status='in_progress'
+        )
+        item.status = 'repair'
+        item.save()
+        logger.info(f"Создан ремонт | equipment={item.pk} | technician={technician_id} | user={request.user.username}")
+        messages.success(request, "Заявка на ремонт создана.")
+    except Exception as e:
+        logger.error(f"Ошибка при создании ремонта | id={item.pk} | {e}", exc_info=True)
+        messages.error(request, "Не удалось создать заявку на ремонт.")
+
     return redirect('equipment', pk=item.pk)
 
 @role_required(['user', 'accountant'])
@@ -196,7 +226,6 @@ def add(request):
 
     errors = []
 
-    # 1. Проверка обязательных полей (до save!)
     required = {
         'inventory_number': inventory_number,
         'name': name,
@@ -209,25 +238,22 @@ def add(request):
     if any(not v for v in required.values()):
         errors.append("Заполните все обязательные поля.")
 
-    # 2. Проверка уникальности
     if inventory_number and Equipment.objects.filter(inventory_number=inventory_number).exists():
         errors.append("Оборудование с таким инвентарным номером уже существует.")
 
     if serial_number and Equipment.objects.filter(serial_number=serial_number).exists():
         errors.append("Оборудование с таким серийным номером уже существует.")
 
-    # 3. Проверка статуса (CheckConstraint)
     valid_statuses = ['working', 'repair', 'written_off']
     if status and status not in valid_statuses:
         errors.append("Недопустимый статус оборудования.")
 
-    # Если есть ошибки — возвращаем на форму
     if errors:
         for err in errors:
             messages.error(request, err)
+        logger.warning(f"Ошибка добавления оборудования | user={request.user.username} | errors={errors}")
         return redirect('add_equipment')
 
-    # 4. Сохранение с защитой от ValidationError
     try:
         equipment = Equipment(
             inventory_number=inventory_number,
@@ -243,11 +269,17 @@ def add(request):
         if photo:
             equipment.photo = photo
 
-        equipment.full_clean()   # проверка модели (дата, constraint)
+        equipment.full_clean()
         equipment.save()
+        logger.info(f"Добавлено оборудование | id={equipment.pk} | inv={inventory_number} | user={request.user.username}")
     except ValidationError as e:
         for msg in e.messages:
             messages.error(request, msg)
+        logger.warning(f"Ошибка валидации при добавлении | inv={inventory_number} | {e.messages}")
+        return redirect('add_equipment')
+    except Exception as e:
+        logger.error(f"Ошибка при добавлении оборудования | inv={inventory_number} | {e}", exc_info=True)
+        messages.error(request, "Не удалось сохранить оборудование.")
         return redirect('add_equipment')
 
     return redirect('catalog')
@@ -302,20 +334,33 @@ def edit(request, pk):
 @role_required(['accountant'])
 def save_edit(request, pk):
     item = get_object_or_404(Equipment, pk=pk)
-    
-    item.inventory_number = request.POST.get('inventory_number')
-    item.name = request.POST.get('name')
-    item.serial_number = request.POST.get('serial_number')
-    item.model = request.POST.get('model')
-    item.purchase_date = request.POST.get('purchase_date')
-    item.status = request.POST.get('status')
-    item.cabinet_id = request.POST.get('cabinet')
-    item.type_id = request.POST.get('type')
-    item.responsible_id = request.POST.get('responsible')
-    if request.FILES.get('photo'):
+
+    try:
+        item.inventory_number = request.POST.get('inventory_number')
+        item.name = request.POST.get('name')
+        item.serial_number = request.POST.get('serial_number')
+        item.model = request.POST.get('model')
+        item.purchase_date = request.POST.get('purchase_date')
+        item.status = request.POST.get('status')
+        item.cabinet_id = request.POST.get('cabinet')
+        item.type_id = request.POST.get('type')
+        item.responsible_id = request.POST.get('responsible')
+        if request.FILES.get('photo'):
             item.photo = request.FILES.get('photo')
-    
-    item.save()
+
+        item.full_clean()
+        item.save()
+        logger.info(f"Отредактировано оборудование | id={item.pk} | inv={item.inventory_number} | user={request.user.username}")
+    except ValidationError as e:
+        for msg in e.messages:
+            messages.error(request, msg)
+        logger.warning(f"Ошибка валидации при редактировании | id={item.pk} | {e.messages}")
+        return redirect('edit', pk=item.pk)
+    except Exception as e:
+        logger.error(f"Ошибка при редактировании | id={item.pk} | {e}", exc_info=True)
+        messages.error(request, "Не удалось сохранить изменения.")
+        return redirect('edit', pk=item.pk)
+
     return redirect('equipment', pk=item.pk)
 
 @role_required(['technician'])
@@ -341,20 +386,32 @@ def repairs(request):
 def close_repair(request):
     repair_id = request.POST.get('repair_id')
     technician_id = request.POST.get('technician')
-    result_text = request.POST.get('result')
+    result_text = (request.POST.get('result') or '').strip()
     new_status = request.POST.get('status')
-    
+
     repair = get_object_or_404(Repair, id=repair_id)
-    
-    repair.technician_id = technician_id
-    repair.result = result_text
-    repair.status = new_status
-    repair.save()
-    
-    if new_status == 'completed':
-        repair.equipment.status = 'working'
-        repair.equipment.save()
-        
+
+    if not result_text:
+        messages.error(request, "Укажите результат ремонта.")
+        logger.warning(f"Ошибка снятия с ремонта (нет результата) | repair={repair_id}")
+        return redirect('repairs')
+
+    try:
+        repair.technician_id = technician_id
+        repair.result = result_text
+        repair.status = new_status
+        repair.save()
+
+        if new_status == 'completed':
+            repair.equipment.status = 'working'
+            repair.equipment.save()
+
+        logger.info(f"Ремонт закрыт | repair={repair_id} | status={new_status} | user={request.user.username}")
+        messages.success(request, "Ремонт закрыт.")
+    except Exception as e:
+        logger.error(f"Ошибка при закрытии ремонта | repair={repair_id} | {e}", exc_info=True)
+        messages.error(request, "Не удалось закрыть ремонт.")
+
     return redirect('repairs')
 
 def signin_staff(request):
@@ -386,15 +443,18 @@ def auth(request):
     if errors:
         for err in errors:
             messages.error(request, err)
+        logger.warning(f"Неудачная попытка входа (валидация) | phone={phone} | IP={request.META.get('REMOTE_ADDR')}")
         return redirect('signin')
 
     user = authenticate(request, username=phone, password=password)
 
     if user is not None:
         login(request, user)
+        logger.info(f"Вход в систему | user={user.username} | role={user.profile.role} | IP={request.META.get('REMOTE_ADDR')}")
         return redirect('profile')
     else:
         messages.error(request, "Неверный телефон или пароль.")
+        logger.warning(f"Неудачная попытка входа (неверный пароль) | phone={phone} | IP={request.META.get('REMOTE_ADDR')}")
         return redirect('signin')
 
 def signup_staff(request):
@@ -441,19 +501,23 @@ def add_user(request):
     if errors:
         for err in errors:
             messages.error(request, err)
+        logger.warning(f"Ошибка регистрации | phone={phone} | errors={errors}")
         return render(request, 'signup.html')
 
-    user = User.objects.create_user(
-        username=phone,
-        email=email,
-        password=password,
-    )
-    Profile.objects.create(user=user, phone=phone, role='user')
-
-    login(request, user)
-    return redirect('profile')
+    try:
+        user = User.objects.create_user(username=phone, email=email, password=password)
+        Profile.objects.create(user=user, phone=phone, role='user')
+        login(request, user)
+        logger.info(f"Зарегистрирован новый пользователь | user={user.username} | email={email}")
+        return redirect('profile')
+    except Exception as e:
+        logger.error(f"Ошибка при создании пользователя | phone={phone} | {e}", exc_info=True)
+        messages.error(request, "Не удалось создать аккаунт. Попробуйте позже.")
+        return render(request, 'signup.html')
 
 def signout(request):
+    if request.user.is_authenticated:
+        logger.info(f"Выход из системы | user={request.user.username}")
     logout(request)
     return redirect('index')
 
@@ -490,4 +554,5 @@ def statement(request):
     return TemplateResponse(request, 'statement.html', context)
 
 def test_500(request):
+    logger.error("Тестовая ошибка 500 | user=%s | path=%s", request.user, request.path)
     raise Exception("Тестовая ошибка")
